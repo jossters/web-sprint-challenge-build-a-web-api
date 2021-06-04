@@ -1,56 +1,57 @@
-const express = require('express');
-const Projects = require('./projects-model');
+const express = require("express");
+const Projects = require("./projects-model");
 
-const { 
-    validateProjectId,
-    validatePost} = require('./middleware');
+const { validateProjectId, validateProject } = require("./middleware");
 
 const router = express.Router();
 
-router.get('/', (req, res, next) => {
-    Projects.get(req.params)
-    .then(projects => {
-        res.status(200).json(projects);
+router.get("/", (req, res, next) => {
+  Projects.get()
+    .then((project) => {
+      res.json(project);
     })
     .catch(next);
-    });
-    
-    router.get('/:id', validateProjectId,(req, res) => {
-        res.json(req.query)
-    });
-    
-    router.post('/', validatePost,(req, res, next) => {
-    Projects.insert(req.params.id, 
-        {name: req.name, 
-        description: req.description, })
-        .then(()=> {
-            return Projects.get(req.params.id)
-        })
-        .then(action => {
-            res.json(action)
-        })
-        .catch(next)
-    });
-    
-    router.put('/:id', validateProjectId, validatePost, (req, res, next) => {
-    Projects.update(req.params.id, 
-        {name: req.name, 
-        description: req.description,})
-        .then(()=> {
-            return Projects.get(req.params.id)
-        })
-        .then(action => {
-            res.json(action)
-        })
-        .catch(next)
-    });
-    
-    router.delete('/:id', validateProjectId, (req, res, next) => {
-    Projects.remove(req.params.id)
+});
+
+router.get("/:id", validateProjectId, (req, res) => {
+  res.json(req.project);
+});
+
+router.post("/", validateProject, async (req, res, next) => {
+  try {
+    const newProject = await Projects.insert(req.body);
+    res.status(201).json(newProject);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put(
+  "/:id",
+  validateProjectId,
+  validateProject,
+  async (req, res, next) => {
+    try {
+      const updatedProject = await Projects.update(req.params.id, req.body);
+      res.json(updatedProject);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.delete("/:id", validateProjectId, (req, res, next) => {
+  Projects.remove(req.params.id)
     .then(() => {
-        res.status(200).json(req.user);
+      res.status(200).json(req.user);
     })
     .catch(next);
-    });
+});
+
+router.get("/:id/actions", validateProjectId, (req, res, next) => {
+  Projects.getProjectActions(req.params.id)
+    .then((actions) => res.json(actions))
+    .catch(next);
+});
 
 module.exports = router;
